@@ -63,19 +63,7 @@ providers.forEach((config) => {
       await vscodeApp.openAnalysisView();
       const analysisView = await vscodeApp.getView(KAIViews.analysisView);
       await analysisView.locator('button#get-solution-button').first().click({ timeout: 300000 });
-      const resolutionView = await vscodeApp.getView(KAIViews.resolutionDetails);
-      const fixLocator = resolutionView.locator('button[aria-label="Accept all changes"]');
-      await vscodeApp.waitDefault();
-      await expect(fixLocator.first()).toBeVisible({ timeout: 3600000 });
-      const fixesNumber = await fixLocator.count();
-      let fixesCounter = await fixLocator.count();
-      for (let i = 0; i < fixesNumber; i++) {
-        await expect(fixLocator.first()).toBeVisible({ timeout: 30000 });
-        // Ensures the button is clicked even if there are notifications overlaying it due to screen size
-        await fixLocator.first().dispatchEvent('click');
-        await vscodeApp.waitDefault();
-        expect(await fixLocator.count()).toEqual(--fixesCounter);
-      }
+      await vscodeApp.acceptAllSolutions();
     });
 
     test.afterEach(async () => {

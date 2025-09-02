@@ -9,7 +9,7 @@ import { cleanupRepo, generateRandomString, getOSInfo } from '../utilities/utils
 import { LeftBarItems } from '../enums/left-bar-items.enum';
 import { DEFAULT_PROVIDER } from '../fixtures/provider-configs.fixture';
 import { KAIViews } from '../enums/views.enum';
-import { TEST_DATA_DIR } from '../utilities/consts';
+import { TEST_DATA_DIR, SEC, MIN } from '../utilities/consts';
 import { BasePage } from './base.page';
 import { installExtension } from '../utilities/vscode-commands.utils';
 import { FixTypes } from '../enums/fix-types.enum';
@@ -572,5 +572,42 @@ export class VSCode extends BasePage {
       console.error('Error writing VSCode settings:', error);
       throw error;
     }
+  }
+  public async acceptAllSolutions() {
+    const resolutionView = await this.getView(KAIViews.resolutionDetails);
+    const fixLocator = resolutionView.locator('button[aria-label="Accept all changes"]');
+    const window = this.getWindow();
+    await expect(fixLocator.first()).toBeVisible({ timeout: 10 * MIN });
+
+    let llmHasMoreSolutins = true;
+    while (llmHasMoreSolutins) {
+      await expect(fixLocator.first()).toBeVisible({ timeout: 5 * MIN });
+      await fixLocator.first().dispatchEvent('click');
+      const successNotification = window.locator('.notification-list-item', {
+        hasText: 'Analysis completed successfully!',
+      });
+      await expect(successNotification).toBeVisible({ timeout: 2 * MIN });
+      await successNotification.hover();
+      await successNotification
+        .getByRole('button', { name: 'Clear Notification (Delete)' })
+        .click();
+      await window.waitForTimeout(10 * SEC);
+      const openInEditorButtonLocator = resolutionView.getByRole('button', {
+        name: 'Open in Editor',
+      });
+      const lastMessageWithButton = resolutionView.locator('.message-wrapper').last().filter({
+        has: openInEditorButtonLocator,
+      });
+
+      const count = await lastMessageWithButton.count();
+      if (count > 0) {
+        llmHasMoreSolutins = false;
+      }
+    }
+  }
+
+  public async searchViolationAndacceptAllSolutions(violation: string) {
+    await this.searchAndRequestFix(violation, FixTypes.Issue);
+    await this.acceptAllSolutions();
   }
 }
