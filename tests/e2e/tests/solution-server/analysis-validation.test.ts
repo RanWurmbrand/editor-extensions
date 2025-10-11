@@ -12,20 +12,21 @@ import {
 } from '../../../mcp-client/mcp-client-responses.model';
 import { AnalysisTab } from '../../enums/analysis-tabs.enum';
 import { FilterState } from '../../enums/filter-state.enum';
+import { FrameLocator } from 'playwright';
 
 test.describe(`Solution server analysis validations`, () => {
   let vsCode: VSCode;
   let mcpClient: MCPClient;
   let successRateBase: SuccessRateResponse;
   let bestHintBase: BestHintResponse;
-
+  const toEnableSolutionServer = true;
   test.beforeAll(async ({ testRepoData }) => {
     const repoInfo = testRepoData['coolstore'];
     test.setTimeout(600000);
     mcpClient = await MCPClient.connect('http://localhost:8000');
     vsCode = await VSCode.open(repoInfo.repoUrl, repoInfo.repoName);
     const config = await Configuration.open(vsCode);
-    await vsCode.SetUpSolutionServer();
+    await vsCode.SetUpSolutionServer(toEnableSolutionServer);
     await vsCode.executeQuickCommand('Konveyor: Restart Solution Server');
     await vsCode.createProfile(repoInfo.sources, repoInfo.targets);
     await vsCode.configureGenerativeAI(DEFAULT_PROVIDER.config);

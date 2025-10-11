@@ -115,14 +115,13 @@ export function writeOrUpdateSettingsJson(settingsPath: string, settings: Record
   }
 }
 
-export function getSOlutionServerConfig() {
+export function getSOlutionServerConfig(toEnableSolutionServer: boolean) {
   const config = {
-    'konveyor.genai.enabled': true,
     'konveyor.solutionServer': {
       enabled: true,
       url: process.env.SOLUTION_SERVER_URL,
       auth: {
-        enabled: true,
+        enabled: toEnableSolutionServer,
         realm: process.env.SOLUTION_SERVER_REALM,
         insecure: true,
         username: process.env.SOLUTION_SERVER_USERNAME,

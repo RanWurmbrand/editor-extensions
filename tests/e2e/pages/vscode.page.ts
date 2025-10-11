@@ -688,11 +688,11 @@ export class VSCode extends BasePage {
     const genAISettingKey = `${extensionName}.genai.enabled`;
     await this.writeOrUpdateVSCodeSettings({ [genAISettingKey]: enabled });
   }
-  public async SetUpSolutionServer() {
+  public async SetUpSolutionServer(toEnableSolutionServer = false) {
     if (!this.repoDir) {
       throw new Error('Missing repository path.');
     }
-    const config = getSOlutionServerConfig();
+    const config = getSOlutionServerConfig(toEnableSolutionServer);
     writeOrUpdateSettingsJson(path.join(this.repoDir ?? '', '.vscode', 'settings.json'), config);
     const modifier = getOSInfo() === 'macOS' ? 'Meta' : 'Control';
     await this.window.keyboard.press(`${modifier}+s`, { delay: 500 });
