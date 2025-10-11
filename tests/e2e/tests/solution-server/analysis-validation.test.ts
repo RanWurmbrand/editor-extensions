@@ -23,7 +23,7 @@ test.describe(`Solution server analysis validations`, () => {
     mcpClient = await MCPClient.connect('http://localhost:8000');
     vsCode = await VSCode.open(repoInfo.repoUrl, repoInfo.repoName);
     const config = await Configuration.open(vsCode);
-    await config.setEnabledConfiguration(solutionServerEnabled, true);
+    await vsCode.SetUpSolutionServer();
     await vsCode.executeQuickCommand('Konveyor: Restart Solution Server');
     await vsCode.createProfile(repoInfo.sources, repoInfo.targets);
     await vsCode.configureGenerativeAI(DEFAULT_PROVIDER.config);

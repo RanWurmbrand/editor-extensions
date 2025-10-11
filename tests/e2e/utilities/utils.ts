@@ -114,3 +114,23 @@ export function writeOrUpdateSettingsJson(settingsPath: string, settings: Record
     throw error;
   }
 }
+
+export function getSOlutionServerConfig() {
+  const config = {
+    'konveyor.genai.enabled': true,
+    'konveyor.solutionServer': {
+      enabled: true,
+      url: process.env.SOLUTION_SERVER_URL,
+      auth: {
+        enabled: true,
+        realm: process.env.SOLUTION_SERVER_REALM,
+        insecure: true,
+        username: process.env.SOLUTION_SERVER_USERNAME,
+        password: process.env.SOLUTION_SERVER_PASSWORD,
+      },
+    },
+    'konveyor.genai.agentMode': true,
+  };
+
+  return config;
+}

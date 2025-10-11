@@ -20,7 +20,7 @@ import { installExtension } from '../utilities/vscode-commands.utils';
 import { FixTypes } from '../enums/fix-types.enum';
 import { stubDialog } from 'electron-playwright-helpers';
 import { extensionId } from '../utilities/utils';
-
+import { getSOlutionServerConfig } from '../utilities/utils';
 const COMMAND_CATEGORY = process.env.TEST_CATEGORY || 'Konveyor';
 
 type SortOrder = 'ascending' | 'descending';
@@ -686,5 +686,14 @@ export class VSCode extends BasePage {
   public async setGenerativeAIEnabled(enabled: boolean): Promise<void> {
     const genAISettingKey = `${extensionName}.genai.enabled`;
     await this.writeOrUpdateVSCodeSettings({ [genAISettingKey]: enabled });
+  }
+  public async SetUpSolutionServer() {
+    if (!this.repoDir) {
+      throw new Error('Missing repository path.');
+    }
+    const config = getSOlutionServerConfig();
+    writeOrUpdateSettingsJson(path.join(this.repoDir ?? '', '.vscode', 'settings.json'), config);
+    const modifier = getOSInfo() === 'macOS' ? 'Meta' : 'Control';
+    await this.window.keyboard.press(`${modifier}+s`, { delay: 500 });
   }
 }
