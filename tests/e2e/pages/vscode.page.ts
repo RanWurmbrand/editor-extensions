@@ -21,6 +21,7 @@ import { FixTypes } from '../enums/fix-types.enum';
 import { stubDialog } from 'electron-playwright-helpers';
 import { extensionId } from '../utilities/utils';
 import { getSOlutionServerConfig } from '../utilities/utils';
+import { SolutionsMap } from '../types/solution-types';
 const COMMAND_CATEGORY = process.env.TEST_CATEGORY || 'Konveyor';
 
 type SortOrder = 'ascending' | 'descending';
@@ -695,5 +696,53 @@ export class VSCode extends BasePage {
     writeOrUpdateSettingsJson(path.join(this.repoDir ?? '', '.vscode', 'settings.json'), config);
     const modifier = getOSInfo() === 'macOS' ? 'Meta' : 'Control';
     await this.window.keyboard.press(`${modifier}+s`, { delay: 500 });
+  }
+  public async getSolutionsStatusFromCardsView(): Promise<SolutionsMap> {
+    const analysisView = await this.getView(KAIViews.analysisView);
+    const results: SolutionsMap = {};
+    const listContainer = analysisView.locator('div.pf-v6-l-stack.pf-m-gutter').nth(2);
+    const allCards = await listContainer.locator('div.pf-v6-c-card').all();
+    for (const card of allCards) {
+      const title = await card.getByRole('heading', { level: 3 }).textContent();
+      if (!title) {
+        continue;
+      }
+      const acceptedCount = await card.locator('span[id="accepted-solutions"]').count();
+      const rejectedCount = await card.locator('span[id="rejected-solutions"]').count();
+      if (acceptedCount > 0 || rejectedCount > 0) {
+        results[title.trim()] = {
+          hasAccepted: acceptedCount > 0,
+          hasRejected: rejectedCount > 0,
+        };
+      }
+    }
+    return results;
+  }
+
+  public async getSolutionsStatusFromIncidentsView(): Promise<SolutionsMap> {
+    const results: SolutionsMap = {};
+    const analysisView = await this.getView(KAIViews.analysisView);
+    const allItems = analysisView.locator('div.pf-v6-l-flex.pf-m-space-items-sm.pf-m-column');
+    const count = await allItems.count();
+    if (count === 0) {
+      return results;
+    }
+    await expect(allItems.first()).toBeVisible({ timeout: 45000 });
+
+    for (const item of await allItems.all()) {
+      const paragraphTexts = await item.locator('p').allTextContents();
+      if (paragraphTexts.length === 0) {
+        continue;
+      }
+      const title = paragraphTexts.join(' ').trim().replace(/\s\s+/g, ' ');
+      const hasAccepted =
+        (await item.locator('span.pf-m-green', { hasText: 'accepted' }).count()) > 0;
+      const hasRejected =
+        (await item.locator('span.pf-m-red', { hasText: 'rejected' }).count()) > 0;
+      if (hasAccepted || hasRejected) {
+        results[title] = { hasAccepted, hasRejected };
+      }
+    }
+    return results;
   }
 }

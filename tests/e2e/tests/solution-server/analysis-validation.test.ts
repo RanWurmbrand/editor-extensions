@@ -10,6 +10,8 @@ import {
   BestHintResponse,
   SuccessRateResponse,
 } from '../../../mcp-client/mcp-client-responses.model';
+import { AnalysisTab } from '../../enums/analysis-tabs.enum';
+import { FilterState } from '../../enums/filter-state.enum';
 
 test.describe(`Solution server analysis validations`, () => {
   let vsCode: VSCode;
@@ -42,6 +44,36 @@ test.describe(`Solution server analysis validations`, () => {
       },
     ]);
     bestHintBase = await mcpClient.getBestHint('eap8/eap7', 'javax-to-jakarta-import-00001');
+  });
+
+  test('Filter by "Has Success Rate" - all incidents view', async () => {
+    await vsCode.openAnalysisView();
+    const analysisView = await vsCode.getView(KAIViews.analysisView);
+
+    await analysisView.getByRole('button', { name: AnalysisTab.all }).click();
+
+    const allIncidentsCard = analysisView.locator('div.pf-v6-c-card', {
+      has: analysisView.getByRole('heading', { name: 'All Incidents' }),
+    });
+    await allIncidentsCard.locator('.pf-v6-c-card__header-toggle button').click();
+
+    const successFilterButton = analysisView.getByRole('button', { name: 'Has Success Rate' });
+    const isPressed = await successFilterButton.getAttribute('aria-pressed');
+    await switchHasSuccessFilter(FilterState.off, analysisView);
+    const incidentsBeforeFilter = await vsCode.getSolutionsStatusFromIncidentsView();
+    await switchHasSuccessFilter(FilterState.on, analysisView);
+    const incidentsAfterFilter = await vsCode.getSolutionsStatusFromIncidentsView();
+
+    expect(incidentsAfterFilter).toEqual(incidentsBeforeFilter);
+    await switchHasSuccessFilter(FilterState.off, analysisView);
+  });
+
+  test('Filter by "Has Success Rate" - files view', async () => {
+    await filterAndAssertFilteration(AnalysisTab.files);
+  });
+
+  test('Filter by "Has Success Rate" - issues view', async () => {
+    await filterAndAssertFilteration(AnalysisTab.issues);
   });
 
   test('Reject solution and assert success rate', async () => {
@@ -129,5 +161,31 @@ test.describe(`Solution server analysis validations`, () => {
         `#javax-to-jakarta-import-00001-${accept ? 'accepted' : 'rejected'}-solutions`
       )
     ).toContainText(`${successRate[key]} ${accept ? 'accepted' : 'rejected'}`);
+  }
+
+  async function switchHasSuccessFilter(switchTo: FilterState, analysisView: FrameLocator) {
+    const successFilterButton = analysisView.getByRole('button', { name: 'Has Success Rate' });
+    const isPressed = await successFilterButton.getAttribute('aria-pressed');
+    if (switchTo == FilterState.on) {
+      if (!isPressed) {
+        await successFilterButton.click();
+      }
+    } else {
+      if (isPressed) {
+        await successFilterButton.click();
+      }
+    }
+  }
+  async function filterAndAssertFilteration(tabName: AnalysisTab) {
+    await vsCode.openAnalysisView();
+    const analysisView = await vsCode.getView(KAIViews.analysisView);
+
+    await analysisView.getByRole('button', { name: tabName }).click();
+    await switchHasSuccessFilter(FilterState.off, analysisView);
+    const listBeforeFilter = await vsCode.getSolutionsStatusFromCardsView();
+    await switchHasSuccessFilter(FilterState.on, analysisView);
+    const listAfterFilter = await vsCode.getSolutionsStatusFromCardsView();
+    expect(listAfterFilter).toEqual(listBeforeFilter);
+    await switchHasSuccessFilter(FilterState.off, analysisView);
   }
 });
